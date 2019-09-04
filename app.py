@@ -1,53 +1,59 @@
-import numpy as np
-import tensorflow as tf
-from flask import Flask, abort, jsonify, make_response, redirect, render_template, request, url_for
-from flask_restplus import Api, Resource, fields
-from keras.models import load_model
 from keras.preprocessing.image import img_to_array
-from PIL import Image
+from keras.models import load_model
+from flask_restplus import Api, Resource, fields
+from flask import Flask, request, jsonify
+import numpy as np
 from werkzeug.datastructures import FileStorage
+from PIL import Image
+from keras.models import model_from_json
+import tensorflow as tf
 
-graph = tf.get_default_graph()
+
 app = Flask(__name__)
-api = Api(
-    app,
-    version="1.0",
-    title="MNIST classification",
-    description="Automated Number classification through Deep learning",
-)
-ns = api.namespace("MNIST", description="Methods")
+api = Api(app, version='1.0', title='MNIST Classification',
+          description='CNN for Mnist')
+ns = api.namespace('Make_School', description='Methods')
 
-#
 single_parser = api.parser()
-single_parser.add_argument(
-    "file", type=FileStorage, required=True, help="Image to store", location="files"
-)
+single_parser.add_argument('file', location='files',
+                           type=FileStorage, required=True)
+
+model = load_model('milad_model.h5')
+graph = tf.get_default_graph()
+
+# Model reconstruction from JSON file
+# with open('model_architecture.json', 'r') as f:
+#     model = model_from_json(f.read())
+#
+# # Load weights into the new model
+# model.load_weights('model_weights.h5')
 
 
-app.model = load_model("mnist_cnn.h5")
-
-
-@ns.route("/mnist")
-class Mnist(Resource):
-    """Uploads your data to the recommender system"""
-
-    @api.doc(parser=single_parser, description="Enter an image")
+@ns.route('/prediction')
+class CNNPrediction(Resource):
+    """Uploads your data to the CNN"""
+    @api.doc(parser=single_parser, description='Upload an mnist image')
     def post(self):
-        """Uploads a new transaction to Rex (Click to see more)"""
         args = single_parser.parse_args()
-        img: Image = Image.open(args.file)
-        img = img.resize((28, 28))
-        file = img_to_array(img)
-        img.close()
-        file = file.reshape(1, 1, 28, 28)
-        file = file / 255
-
+        image_file = args.file
+        image_file.save('img_1.jpg')
+        img = Image.open('img_1.jpg')
+        image_red = img.resize((28, 28))
+        image = img_to_array(image_red)
+        print(image.shape)
+        x = image.reshape(1, 28, 28, 1)
+        x = x/255
+        # This is not good, because this code implies that the model will be
+        # loaded each and every time a new request comes in.
+        # model = load_model('my_model.h5')
         with graph.as_default():
-            all_pred = app.model.predict(file)
-            pred = np.argmax(all_pred[0])
+            out = model.predict(x)
+        print(out[0])
+        print(np.argmax(out[0]))
+        r = np.argmax(out[0])
 
-        return {"pred": str(pred)}
+        return {'prediction': str(r)}
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=4000)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
