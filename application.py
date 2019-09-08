@@ -9,7 +9,7 @@ from keras.models import model_from_json
 import tensorflow as tf
 
 
-app = Flask(__name__)
+application = app = Flask(__name__)
 api = Api(app, version='1.0', title='MNIST Classification',
           description='CNN for Mnist')
 ns = api.namespace('Make_School', description='Methods')
