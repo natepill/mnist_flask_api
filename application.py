@@ -10,6 +10,7 @@ import tensorflow as tf
 
 # For Logging w/ Firestore
 import os
+import datetime
 from firebase_admin import credentials, firestore, initialize_app
 
 
@@ -63,7 +64,7 @@ class CNNPrediction(Resource):
         print(np.argmax(out[0]))
         r = np.argmax(out[0])
 
-        mnist_ref.document().set({"Filename": str(image_file), "Time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "Prediction": int(r), "Activation": [float(x) for x in softmax_interval]})
+        mnist_ref.document().set({"Filename": str(image_file), "Time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "Prediction": int(r)})
 
         return {'prediction': str(r)}
 
