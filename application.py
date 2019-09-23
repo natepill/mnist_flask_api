@@ -8,6 +8,17 @@ from PIL import Image
 from keras.models import model_from_json
 import tensorflow as tf
 
+# For Logging w/ Firestore
+import os
+from firebase_admin import credentials, firestore, initialize_app
+
+
+# Initialize Firestore DB
+cred = credentials.Certificate('key.json')
+default_app = initialize_app(cred)
+db = firestore.client()
+mnist_ref = db.collection('mnist_responses')
+
 
 application = app = Flask(__name__)
 api = Api(app, version='1.0', title='MNIST Classification',
@@ -51,6 +62,8 @@ class CNNPrediction(Resource):
         print(out[0])
         print(np.argmax(out[0]))
         r = np.argmax(out[0])
+
+        mnist_ref.document().set({"Filename": str(image_file), "Time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "Prediction": int(r), "Activation": [float(x) for x in softmax_interval]})
 
         return {'prediction': str(r)}
 
